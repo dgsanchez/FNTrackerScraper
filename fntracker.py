@@ -7,19 +7,20 @@ import sys
 url = 'https://fortnitetracker.com/events/epicgames_S14_FNCS_Qualifier1_EU_PC?window=S14_FNCS_Qualifier1_EU_PC_Event1'
 url += '&page='
 
+# Initialize variable that will hold the data
 results = []
 players = None
 gamedata = None
 accounts = None
 
+# Different booleans for each exit condition.
 found = False
 found2 = False
 found3 = False
 
+# Variables for the player/id to be searched.
 id_search = False
-
 searched = ''
-
 player_searched = None
 
 points_top = 0
@@ -32,12 +33,14 @@ top = 100
 page = 0
 num_players = 100
 
+# Can either see how many points a placement position has or search for a player.
 if len(sys.argv) > 1:
 	try:
 		top = int(sys.argv[1])
 	except:
 		searched = sys.argv[1].lower()
 
+# Either search with an id or search player and number of points a place has.
 if len(sys.argv) > 2:
 	if sys.argv[1] == 'id':
 		id_search = True
@@ -51,19 +54,22 @@ if len(sys.argv) > 2:
 			top = int(sys.argv[2])
 			searched = sys.argv[1].lower()
 
+# Limit the search to the first 2,000 players.
 try:
-	for page in range(15):
-
+	for page in range(20):
+		
+		# Getting the page and passing it through BeautifulSoup
 		response = requests.get(url + str(page))
 
 		soup = BeautifulSoup(response.text, 'html.parser')
 		scripts = soup.find_all('script', type='text/javascript')
 
 		for s in scripts:
+			# Search for the leaderboard in the scripts.
 			if 'var imp_leaderboard' in str(s):
 				gamedata = str(s)
 				
-				# print(gamedata)
+				# Save the leaderboard and pass it through JSON.
 				gamedata = gamedata[len('var imp_leaderboard = ')+31:-10]
 				gamedata = json.loads(gamedata)
 		
@@ -76,9 +82,11 @@ try:
 
 		players = {}
 
+		# Little precaution in case page is empty.
 		if accounts is None or gamedata is None:
 			break
 
+		# Search for the player and save all the players on the actual page.
 		for tmp in accounts.keys():
 			# print(accounts[tmp]['nickname'])
 			players[tmp] = accounts[tmp]['nickname']
@@ -92,7 +100,8 @@ try:
 				if tmp == searched:
 					found = True
 					player_searched = tmp
-				
+		
+		# Process the data and give the information if the player is found in this page.
 		if found:
 			for row in gamedata:
 				team = row['teamAccountIds']
@@ -117,7 +126,7 @@ try:
 					print("POSITION: ", row['rank'])
 					print("POINTS: ", row['pointsEarned'], end="\n\n")
 
-
+		# Check if the placement is in the actual page.
 		if page == int((top - 1) / num_players):
 			index = top - num_players * page
 
@@ -133,7 +142,7 @@ try:
 
 			found2 = True
 
-		
+		# If both conditions are true, we're done.
 		if found and found2:
 			break
 
